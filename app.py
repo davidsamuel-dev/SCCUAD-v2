@@ -204,21 +204,24 @@ elif choice == "📝 Novo Cadastro":
         # --- LÓGICA DE CÁLCULO DE VALORES ---
         valor_total = 0
         
+    
         if is_crianca:
-            # Regra 2: Crianças pagam apenas passagem (R$ 137) se forem de ônibus
+            # Crianças: R$ 137 se ônibus, R$ 0 se carro
             valor_total = 137 if transp == "Ônibus" else 0
             info_msg = f"👶 Criança: Passagem R$ {valor_total},00"
         else:
-            # Regra 1: Inscrição base R$ 163
-            valor_total = 163
-            
-            # Se pegou bloco, o valor é baseado nos cupons (substitui os 163)
-            if "100" in bloco:
-                valor_total = 200 # 100 * 2
+            # REGRA DE OURO: Se for Ônibus (com ou sem bloco), é R$ 300
+            if transp == "Ônibus":
+                valor_total = 300
+            # Se for de Carro, depende do bloco
+            elif "100" in bloco:
+                valor_total = 200
             elif "150" in bloco:
-                valor_total = 300 # 150 * 2
+                valor_total = 300
+            else:
+                valor_total = 163  # Inscrição avulsa (Carro e sem bloco)
             
-            info_msg = f"👤 Adulto: Total R$ {valor_total},00 (Inscrição + Logística)"
+            info_msg = f"👤 Adulto: Total R$ {valor_total},00"
 
         st.info(f"💰 {info_msg} | 🚗 Transporte: {transp}")
 
@@ -307,6 +310,10 @@ elif choice == "📋 Gestão de Registros":
             )
 
         # Tabela com dados filtrados
+        busca = st.text_input("🔍 Busca rápida por nome:", "").upper()
+        if busca:
+            df_f = df_f[df_f['nome'].str.contains(busca, na=False)]
+            
         st.dataframe(df_f, use_container_width=True, hide_index=True)
 
         st.divider()
@@ -350,6 +357,3 @@ elif choice == "📋 Gestão de Registros":
                         st.rerun()
     else:
         st.info("O banco de dados está vazio.")
-
-
-
