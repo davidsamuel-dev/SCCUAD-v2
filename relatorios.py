@@ -7,8 +7,16 @@ import unicodedata
 def normalizar(txt):
     if txt is None or pd.isna(txt): return ""
     txt = str(txt)
-    return ''.join(c for c in unicodedata.normalize('NFD', txt)
-                  if unicodedata.category(c) != 'Mn').upper()
+    
+    # 1. Decompõe acentos (Ex: 'Á' vira 'A' + '´')
+    nfkd_form = unicodedata.normalize('NFKD', txt)
+    
+    # 2. Filtra apenas caracteres que não são acentos (Mn) E que são básicos (ASCII)
+    # Isso vai matar o traço longo "–" e trocar por nada, ou você pode tratar antes.
+    txt_limpo = "".join([c for c in nfkd_form if not unicodedata.combining(c)])
+    
+    # 3. Garante que o texto final seja compatível com o PDF (ASCII puro)
+    return txt_limpo.encode('ascii', 'ignore').decode('ascii').upper().strip()
 
 class PDF(FPDF):
     def header(self):
