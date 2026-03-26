@@ -252,19 +252,18 @@ elif choice == "📝 Novo Cadastro":
                     st.rerun()
             else:
                 st.warning("⚠️ Por favor, preencha pelo menos o Nome Completo.")
+                
 elif choice == "📋 Gestão de Registros":
     st.title("📋 Gestão Estratégica SCCUADP")
-    # 👈 ADICIONADO: Botão de Sincronização Manual
+    
     if st.sidebar.button("🔄 Sincronizar Banco"):
         st.cache_data.clear()
         st.rerun()
     
-    # Busca os dados do Firebase (Agora via Cache)
     df = buscar_participantes()
     
-    
     if not df.empty:
-        # --- ÁREA DE FILTROS EXPANSÍVEL (5 FILTROS) ---
+        # --- ÁREA DE FILTROS EXPANSÍVEL (6 FILTROS) ---
         with st.expander("🔍 Filtros Avançados", expanded=True):
             # Primeira linha de filtros
             c1, c2, c3 = st.columns(3)
@@ -273,10 +272,14 @@ elif choice == "📋 Gestão de Registros":
             f_depto = c2.multiselect("Filtrar Departamento:", options=["JGE", "AGE", "OUTRO"])
             f_transporte = c3.multiselect("Filtrar Transporte:", options=df['transporte'].unique())
             
-            # Segunda linha de filtros
-            c4, c5 = st.columns(2)
+            # Segunda linha de filtros (Aumentada para 3 colunas)
+            c4, c5, c6 = st.columns(3)
             f_alojamento = c4.multiselect("Filtrar Alojamento:", options=["Sim", "Não"], help="Sim = Alojamento / Não = Hotel ou Próprio")
             f_crianca = c5.multiselect("Filtrar Criança:", options=["Sim", "Não"], help="Filtra por is_crianca")
+            
+            # NOVO FILTRO: Cupons / Blocos
+            opcoes_bloco = sorted(df['bloco'].dropna().unique())
+            f_bloco = c6.multiselect("Filtrar Cupons/Blocos:", options=opcoes_bloco)
 
         # --- LÓGICA DE FILTRO (Vazio = Tudo) ---
         df_f = df.copy()
@@ -290,9 +293,12 @@ elif choice == "📋 Gestão de Registros":
         if f_alojamento:
             df_f = df_f[df_f['alojamento'].isin(f_alojamento)]
         if f_crianca:
-            # Converte a seleção "Sim/Não" para o booleano True/False do banco
             val_crianca = [True if v == "Sim" else False for v in f_crianca]
             df_f = df_f[df_f['is_crianca'].isin(val_crianca)]
+        
+        # APLICAÇÃO DO NOVO FILTRO
+        if f_bloco:
+            df_f = df_f[df_f['bloco'].isin(f_bloco)]
 
         # --- EXIBIÇÃO E RELATÓRIO ---
         col_resumo, col_pdf = st.columns([3, 1])
@@ -309,7 +315,7 @@ elif choice == "📋 Gestão de Registros":
                 use_container_width=True
             )
 
-        # Tabela com dados filtrados
+        # Tabela com dados filtrados e busca por nome
         busca = st.text_input("🔍 Busca rápida por nome:", "").upper()
         if busca:
             df_f = df_f[df_f['nome'].str.contains(busca, na=False)]
@@ -351,7 +357,7 @@ elif choice == "📋 Gestão de Registros":
                     if confirmar:
                         id_firebase = df_f[df_f['nome'] == pessoa_del].iloc[0]['id_firebase']
                         db.collection("participantes").document(id_firebase).delete()
-                        st.cache_data.clear() # 👈 Importante limpar o cache aqui também!
+                        st.cache_data.clear()
                         st.error("Registro removido!")
                         time.sleep(1)
                         st.rerun()
