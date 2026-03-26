@@ -291,26 +291,33 @@ elif choice == "📋 Gestão de Registros":
         st.cache_data.clear()
         st.rerun()
     
+    # Busca os dados do Firebase (Via Cache)
     df = buscar_participantes()
     
     if not df.empty:
-        # --- ÁREA DE FILTROS EXPANSÍVEL (6 FILTROS) ---
+        # --- ÁREA DE FILTROS EXPANSÍVEL (8 FILTROS) ---
         with st.expander("🔍 Filtros Avançados", expanded=True):
-            # Primeira linha de filtros
+            # Primeira linha: Unidade, Departamento e Transporte
             c1, c2, c3 = st.columns(3)
             opcoes_unidade = sorted(df['unidade'].dropna().unique())
             f_unidade = c1.multiselect("Filtrar Regional:", options=opcoes_unidade)
             f_depto = c2.multiselect("Filtrar Departamento:", options=["JGE", "AGE", "OUTRO"])
             f_transporte = c3.multiselect("Filtrar Transporte:", options=df['transporte'].unique())
             
-            # Segunda linha de filtros (Aumentada para 3 colunas)
+            # Segunda linha: Alojamento, Criança e Blocos
             c4, c5, c6 = st.columns(3)
-            f_alojamento = c4.multiselect("Filtrar Alojamento:", options=["Sim", "Não"], help="Sim = Alojamento / Não = Hotel ou Próprio")
-            f_crianca = c5.multiselect("Filtrar Criança:", options=["Sim", "Não"], help="Filtra por is_crianca")
-            
-            # NOVO FILTRO: Cupons / Blocos
+            f_alojamento = c4.multiselect("Filtrar Alojamento:", options=["Sim", "Não"])
+            f_crianca = c5.multiselect("Filtrar Criança:", options=["Sim", "Não"])
             opcoes_bloco = sorted(df['bloco'].dropna().unique())
             f_bloco = c6.multiselect("Filtrar Cupons/Blocos:", options=opcoes_bloco)
+            
+            # TERCEIRA LINHA (NOVOS FILTROS): Status e Valor
+            c7, c8 = st.columns(2)
+            f_pago = c7.multiselect("Filtrar Status Pagamento:", options=["Pago", "Pendente"])
+            
+            # Filtro de valor: converte para float para garantir a ordenação correta
+            opcoes_valor = sorted(df['valor_total'].unique())
+            f_valor = c8.multiselect("Filtrar Valor Total (R$):", options=opcoes_valor)
 
         # --- LÓGICA DE FILTRO (Vazio = Tudo) ---
         df_f = df.copy()
@@ -326,10 +333,14 @@ elif choice == "📋 Gestão de Registros":
         if f_crianca:
             val_crianca = [True if v == "Sim" else False for v in f_crianca]
             df_f = df_f[df_f['is_crianca'].isin(val_crianca)]
-        
-        # APLICAÇÃO DO NOVO FILTRO
         if f_bloco:
             df_f = df_f[df_f['bloco'].isin(f_bloco)]
+        
+        # APLICAÇÃO DOS NOVOS FILTROS
+        if f_pago:
+            df_f = df_f[df_f['pago'].isin(f_pago)]
+        if f_valor:
+            df_f = df_f[df_f['valor_total'].isin(f_valor)]
 
         # --- EXIBIÇÃO E RELATÓRIO ---
         col_resumo, col_pdf = st.columns([3, 1])
@@ -346,7 +357,7 @@ elif choice == "📋 Gestão de Registros":
                 use_container_width=True
             )
 
-        # Tabela com dados filtrados e busca por nome
+        # Tabela com busca por nome
         busca = st.text_input("🔍 Busca rápida por nome:", "").upper()
         if busca:
             df_f = df_f[df_f['nome'].str.contains(busca, na=False)]
