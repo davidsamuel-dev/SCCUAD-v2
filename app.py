@@ -15,29 +15,45 @@ from relatorios import gerar_pdf_filtrado
 def editar_participante_dialog(dados, db):
     st.markdown(f"Alterando registro de: **{dados['nome']}**")
     
+    # Criamos o formulário para os campos editáveis
     with st.form("form_edicao_total"):
         col1, col2 = st.columns(2)
         
         with col1:
             novo_nome = st.text_input("Nome Completo", value=dados.get('nome', ''))
             novo_cpf = st.text_input("CPF", value=dados.get('cpf', ''))
-            novo_depto = st.selectbox("Departamento", ["JGE", "AGE", "OUTRO"], 
-                                     index=["JGE", "AGE", "OUTRO"].index(dados.get('departamento', 'JGE')))
+            
+            # Lógica para o index do departamento
+            lista_depto = ["JGE", "AGE", "OUTRO"]
+            depto_atual = dados.get('departamento', 'JGE')
+            idx_depto = lista_depto.index(depto_atual) if depto_atual in lista_depto else 0
+            novo_depto = st.selectbox("Departamento", lista_depto, index=idx_depto)
+            
             novo_valor = st.number_input("Valor Total (R$)", value=float(dados.get('valor_total', 0)))
         
         with col2:
             nova_unidade = st.text_input("Regional / Unidade", value=dados.get('unidade', ''))
+            
             novo_transporte = st.selectbox("Transporte", ["Ônibus", "Carro"], 
                                           index=0 if dados.get('transporte') == "Ônibus" else 1)
+            
             novo_alojamento = st.selectbox("Alojamento", ["Sim", "Não"], 
                                           index=0 if dados.get('alojamento') == "Sim" else 1)
+            
+            # ADICIONADO: Opção de editar o Bloco
+            lista_blocos = ["Não", "Sim (100 cupons)", "Sim (150 cupons)"]
+            bloco_atual = dados.get('bloco', 'Não')
+            idx_bloco = lista_blocos.index(bloco_atual) if bloco_atual in lista_blocos else 0
+            novo_bloco = st.selectbox("Retirou Bloco?", lista_blocos, index=idx_bloco)
+
             novo_pago = st.selectbox("Status", ["Pago", "Pendente"], 
                                     index=0 if dados.get('pago') == "Pago" else 1)
             
         st.divider()
+        
+        # Botão de Salvar (Dentro do Form)
         if st.form_submit_button("💾 SALVAR ALTERAÇÕES", use_container_width=True):
             try:
-                # Atualização direta no Firebase usando o ID único
                 db.collection("participantes").document(dados['id_firebase']).update({
                     "nome": novo_nome.upper(),
                     "cpf": novo_cpf,
@@ -46,14 +62,29 @@ def editar_participante_dialog(dados, db):
                     "unidade": nova_unidade,
                     "transporte": novo_transporte,
                     "alojamento": novo_alojamento,
+                    "bloco": novo_bloco, # Atualiza o campo bloco
                     "pago": novo_pago
                 })
-                st.cache_data.clear() # 👈 ADICIONADO: Limpa a memória para ler o novo dado
+                st.cache_data.clear()
                 st.success("✅ Dados atualizados com sucesso!")
                 time.sleep(1)
-                st.rerun() # Recarrega a página para atualizar a tabela
+                st.rerun()
             except Exception as e:
                 st.error(f"Erro ao atualizar: {e}")
+
+    # ADICIONADO: Opção de Excluir (Fora do form para segurança)
+    st.markdown("### ⚠️ Zona de Perigo")
+    confirmar_exclusao = st.checkbox(f"Confirmo que desejo apagar permanentemente o registro de {dados['nome']}")
+    
+    if st.button("🗑️ EXCLUIR REGISTRO", type="primary", use_container_width=True, disabled=not confirmar_exclusao):
+        try:
+            db.collection("participantes").document(dados['id_firebase']).delete()
+            st.cache_data.clear()
+            st.warning("Registro removido com sucesso.")
+            time.sleep(1)
+            st.rerun()
+        except Exception as e:
+            st.error(f"Erro ao excluir: {e}")
 # --- CONEXÃO COM FIREBASE (VERSÃO CORRIGIDA) ---
 @st.cache_resource
 def get_db():
