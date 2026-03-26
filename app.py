@@ -285,7 +285,7 @@ elif choice == "📝 Novo Cadastro":
                 st.warning("⚠️ Por favor, preencha pelo menos o Nome Completo.")
                 
 elif choice == "📋 Gestão de Registros":
-    st.title("📋 Gestão Estratégica SCCUADP")
+    st.title("📋 Gestão de Registros")
     
     if st.sidebar.button("🔄 Sincronizar Banco"):
         st.cache_data.clear()
