@@ -176,7 +176,7 @@ with st.sidebar:
 
 # --- MÓDULO DASHBOARD (VERSÃO CORRIGIDA) ---
 if choice == "📊 Dashboard":
-    st.title("📊 Painel de Indicadores")
+    st.title("📊 Dashboard")
     df = buscar_participantes()
 
     if not df.empty:
